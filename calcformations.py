@@ -1,192 +1,173 @@
+"""Detects formations in nasdaq-charts. Current: DoubleTop and DoubleBottom."""
 import argparse
-import os
+import math
 import pandas as pd
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.rcsetup as rcsetup
 import scipy.signal as sp
-import math
+import matplotlib.pyplot as plt
+
+found_necklines = []
+found_breaking_of_necklines = []
 
 def main():
+    """Set-up argparser and process arguments."""
 
-	# set input parameter and help message
-	my_parser = argparse.ArgumentParser()
-	my_parser.add_argument(
-		"-c", 
-		metavar="C",  
-		required=True,
-		help="Set the nasdaq company you want to examine. [ident e.g. AMZN for Amazon]")
+    # set input parameter and help message
+    my_parser = argparse.ArgumentParser()
+    my_parser.add_argument(
+        "-c",
+        metavar="C",
+        required=True,
+        help="Set the nasdaq company you want to examine. [ident e.g. AMZN for Amazon]")
 
-	my_parser.add_argument(
-		"-t", 
-		metavar="t", 
-		default="minute",
-		choices=["day","minute"],
-		help="Set the time frame of each candle in the chart. [choose between day and minute]")
+    my_parser.add_argument(
+        "-t",
+        metavar="t",
+        default="minute",
+        choices=["day","minute"],
+        help="Set the time frame of each candle in the chart. [choose between day and minute]")
 
-	my_parser.add_argument(
-		"-d",
-		metavar="d",
-		help="Set the date of data set")
+    my_parser.add_argument(
+        "-d",
+        metavar="d",
+        help="Set the date of data set")
 
-	args = my_parser.parse_args()
+    my_parser.add_argument(
+        "-f",
+        metavar="f",
+        help="Set the formations you want to be detected. 0 = Double Top, 1 = Double Bottom")
 
-	company = args.c.upper()
-	time_frame = args.t.lower()	
-	df = readFile(company, time_frame)
-	detectDoubleTop(df)	
+    args = my_parser.parse_args()
 
-def readFile(company, time_frame):
+    company = args.c.upper()
+    time_frame = args.t.lower()
+    chart_data = read_file(company, time_frame)
+    prepare_data(chart_data)
 
-	filepath = r'/data/financedata/2020ss/gelling/data/kibot3/NASDAQ/{}/{}.candle.{}.unadjusted'.format(company, company.lower(), time_frame)
-	df = pd.read_csv(
-		filepath,
-		",",
-		header=None, 
-		names=["Date","Time","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"],
-		parse_dates=[0])
-	
-	return df
+def read_file(company, time_frame):
+    """Reads file with chart_data."""
 
-def detectDoubleTop(df):
+    filepath = (r'/data/financedata/2020ss/gelling/data/kibot3/NASDAQ/{company}/{company.lower()}'
+        r'.candle.{time_frame}.unadjusted')
+    chart_data = pd.read_csv(
+        filepath,
+        ",",
+        header=None,
+        names=["Date","Time","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"],
+        parse_dates=[0])
+    return chart_data
 
-	df = df[:300]
-	datasetIndex = df.index.tolist()
-	datasetCloseVal = df[['Close']]
+def prepare_data(chart_data):
+    """Prepares data for further calculations. """
 
-	fig1 = plt.figure(figsize=(80, 40), dpi= 120, facecolor='w', edgecolor='k')
-	
-	# get indizes of maxs and mins
-	arrIndexMaxima = sp.argrelextrema(np.array(datasetCloseVal), np.greater)
-	arrIndexMinima = sp.argrelextrema(np.array(datasetCloseVal), np.less)
+    chart_data = chart_data[:300]
+    #dataset_index = chart_data.index.tolist()
+    dataset_close_val = chart_data[['Close']]
 
-	arrValuesMaxima = datasetCloseVal.iloc[arrIndexMaxima[0]]['Close'].values
-	arrValuesMinima = datasetCloseVal.iloc[arrIndexMinima[0]]['Close'].values
+    # get indizes of maxs and mins
+    arr_index_maxima = sp.argrelextrema(np.array(dataset_close_val), np.greater)
+    arr_index_minima = sp.argrelextrema(np.array(dataset_close_val), np.less)
+    arr_values_maxima = dataset_close_val.iloc[arr_index_maxima[0]]['Close'].values
+    arr_values_minima = dataset_close_val.iloc[arr_index_minima[0]]['Close'].values
 
-	# get values of minimums/maximums
-	max_vals = []
-	max_vals_index = []
-	max_values = []
-	min_vals = []
-	min_vals_index = []
-	plt.xticks(range(0, df.size))	
-	
-	# index = Index innerhalb der Index-Schleife;i = Index wo Maximum vorliegt
-	for index, i in enumerate(arrIndexMaxima[0]):		
-		if index > 0:	
-			# aufeinanderfolgende Tops ca gleich hoch (1 Prozent Abweichung) -> Anfindex eintragen
-			if (arrValuesMaxima[index-1]>=arrValuesMaxima[index]) and math.isclose(arrValuesMaxima[index-1],arrValuesMaxima[index],rel_tol=0.02):
-				
-				plt.axvline(x=i, color='black', markersize=0.1, alpha=0.3)
-				plt.axvline(x=arrIndexMaxima[0][index-1], color='black', markersize=0.1, alpha=0.3) # i stimmt nicht mit -1
-				#print("I-1 ",arrIndexMaxima[0][index-1],"I ", arrIndexMaxima[0][index])
-				max_vals.append(arrValuesMaxima[index-1])
-				max_vals_index.append(arrIndexMaxima[0][index-1])
-				max_vals.append(arrValuesMaxima[index])
-				max_vals_index.append(i)
-				
-				rangeBetweenTwoMaxs = (df.index.values >= arrIndexMaxima[0][index-1]) & (df.index.values < arrIndexMaxima[0][index]+5)
-								
-				rangeArr = df.index.values[rangeBetweenTwoMaxs]
-				valuesOfRange = datasetCloseVal[rangeBetweenTwoMaxs]
-				necklineValue = np.min(valuesOfRange[:-4])[0] # min
-				startNeckline = min(rangeArr)*(1/datasetCloseVal.size)
-				endNeckline = max(rangeArr)*(1/datasetCloseVal.size)
-				plt.axhline(y=necklineValue, xmin=startNeckline, xmax=endNeckline, color='red', alpha=0.1)
-				
-				# wenn unter Neckline faellt, dann ists DoubleTop
-				
-				firstIndexBelowNeckline = getFirstIndexBreakingNeckline(valuesOfRange[-4:]['Close'].values, necklineValue, "<")
-				if firstIndexBelowNeckline > -1:	
-					indexBreakthrough = arrIndexMaxima[0][index] + firstIndexBelowNeckline
-					valueBreakthrough = datasetCloseVal[df.index.values == indexBreakthrough]['Close'].values
-					plt.plot(indexBreakthrough, valueBreakthrough, 'o', alpha=1, color='blue')
-					plt.plot(valuesOfRange.index.values, valuesOfRange.values, '-', color='green', markersize=4, alpha=1)
-					print("Detected Double Top:")
-					print(valuesOfRange.index.values)
-	print("")
-	print("DOUBLE BOTTOM")
-	# doubleBottom iterate through all minima
-	for index, i in enumerate(arrIndexMinima[0]):
-		if index > 0:
-			# if prev minima bigger eq curr minima & rel_diff 2 percent
-			if (arrValuesMinima[index-1]<=arrValuesMinima[index]) and math.isclose(arrValuesMinima[index-1],arrValuesMinima[index],rel_tol=0.02):
-				
-				min_vals.append(arrValuesMinima[index-1]) # prev minimum
-				min_vals_index.append(arrIndexMinima[0][index-1]) # index of pre minimum
-				min_vals.append(arrValuesMinima[index]) # curr minimum
-				min_vals_index.append(i) # index of curr minimum
-				
-				# rangetoexamine
-				rangeBetweenTwoMins = (df.index.values >= arrIndexMinima[0][index-1]) & (df.index.values < arrIndexMinima[0][index]+5)
-				arrRangeMins = df.index.values[rangeBetweenTwoMins]
-				arrValuesOfMins = datasetCloseVal[rangeBetweenTwoMins]
-				necklineValue = np.max(arrValuesOfMins[:-4])[0] 
-				startNeckline = min(arrRangeMins)*(1/datasetCloseVal.size)
-				endNeckline = max(rangeArr)*(1/datasetCloseVal.size)
+    detect_double_formation(arr_index_minima[0], arr_values_minima, 1, chart_data)
 
-				firstIndexBreakingNeckline = getFirstIndexBreakingNeckline(arrValuesOfMins[-4:]['Close'].values, necklineValue, ">")
-				if firstIndexBreakingNeckline > -1:
-					#print(arrValuesOfMins)
-					indexBreakthrough = arrIndexMinima[0][index] + firstIndexBreakingNeckline
-					valueBreakthrough = datasetCloseVal[df.index.values == indexBreakthrough]['Close'].values
-					#print("Detected Double Bottom: ")
-					#print(arrValuesOfMins.index.values)
+def detect_double_formation(arr_index_extreme_values, arr_vals_extreme_values,
+type_of_double_formation, chart_data):
+    """Detects double bottom/top in chart_data. """
 
-	# Plot data Points
-	plt.plot(datasetIndex, datasetCloseVal, '-', markersize=1.5, color='black', alpha=0.6)
-	plt.plot(max_vals_index, max_vals, 'o', markersize=9.5, color='green')
-	plt.xlim([0, datasetCloseVal.size])
-	fig1.savefig("test2.png")
+    # 0 = Double Top; 1 = Double Bottom; 2 = Both
 
-	detectDoubleFormation(arrIndexMaxima[0], arrValuesMaxima, 0, df)
+    dataset_close_val = chart_data[['Close']]
+    found_formations = []
+    found_formations_index = []
 
-def detectDoubleFormation(arrIndexExtremeValues, arrValsExtremeValues, typeOfDoubleFormation, df):
-	# 0 = Double Top; 1 = Double Bottom; 2 = Both
-	
-	datasetCloseVal = df[['Close']]
+    crit_compare_extreme_vals = '>='
+    neckline_operator = "<"
+    title = "Top"
+    if type_of_double_formation == 1:
+        crit_compare_extreme_vals = '<='
+        neckline_operator = ">"
+        title = "Bottom"
 
-	critCompareExtremeVals = '>=' #(prevExtreme >= currExtreme)
-	necklineOperator = "<"
-	if typeOfDoubleFormation == 1:
-		critCompareExtremeVals = '<=' #(prevExtreme <= currExtreme)
-		necklineOperator = ">"
+    for index_arr, index_dataset in enumerate(arr_index_extreme_values): # KANN WEG
+        if index_arr > 0:
+            prev_extreme = arr_vals_extreme_values[index_arr-1]
+            curr_extreme = arr_vals_extreme_values[index_arr]
 
-	for indexArr, indexDataset in enumerate(arrIndexExtremeValues):
-		if indexArr > 0:
-			prevExtreme = arrValsExtremeValues[indexArr-1]
-			currExtreme = arrValsExtremeValues[indexArr]
-			
-			if (eval(str(prevExtreme) + critCompareExtremeVals + str(currExtreme)) and math.isclose(prevExtreme, currExtreme, rel_tol=0.02)):
-				
-				conditionRangeBetweenTwoExtremes = (df.index.values >= arrIndexExtremeValues[indexArr-1]) & (df.index.values < arrIndexExtremeValues[indexArr]+5)
-				
-				arrRangeExtremes = df.index.values[conditionRangeBetweenTwoExtremes]
-				arrValuesOfExtremes = datasetCloseVal[conditionRangeBetweenTwoExtremes]
-				necklineValue = np.max(arrValuesOfExtremes[:-4])[0]
-				firstIndexBreakingNeckline = getFirstIndexBreakingNeckline(arrValuesOfExtremes[-4:]['Close'].values, necklineValue, necklineOperator)
-				if firstIndexBreakingNeckline > -1: 
-					indexBreakthrough = currExtreme + firstIndexBreakingNeckline
-					valueBreakthrough = datasetCloseVal[df.index.values == indexBreakthrough]['Close']
-					print("Detected Double Formations: ")
-					print(arrValuesOfExtremes.index.values)
+            if (eval(str(prev_extreme) + crit_compare_extreme_vals + str(curr_extreme))
+            and math.isclose(prev_extreme, curr_extreme, rel_tol=0.02)):
+
+                condition_range_between_two_extremes = ((chart_data.index.values >=
+                arr_index_extreme_values[index_arr-1]) &
+                (chart_data.index.values < arr_index_extreme_values[index_arr]+5))
+
+                arr_range_extremes = chart_data.index.values[condition_range_between_two_extremes]
+                arr_values_of_extremes = dataset_close_val[condition_range_between_two_extremes]
+
+                first_index_breaking_neckline = get_first_index_breaking_neckline(
+                arr_range_extremes, arr_values_of_extremes['Close'].values, neckline_operator)
+
+                if first_index_breaking_neckline > -1:
+                    index_breakthrough = (arr_index_extreme_values[index_arr] +
+                    first_index_breaking_neckline)
+                    value_breakthrough = dataset_close_val[chart_data.index.values ==
+                    index_breakthrough]['Close'].values
+                    found_breaking_of_necklines.append([index_breakthrough, value_breakthrough])
+                    found_formations.append(prev_extreme)
+                    found_formations_index.append(arr_index_extreme_values[index_arr-1])
+                    found_formations.append(curr_extreme)
+                    found_formations_index.append(arr_index_extreme_values[index_arr])
+                    print("Detected Double", title, ":")
+                    print(arr_values_of_extremes.index.values)
+
+    # zeichnen --> eigene Methode
+    plot_formations(found_formations, found_formations_index, dataset_close_val)
+
+def get_first_index_breaking_neckline(range_arr, value_arr, operator):
+    """Gets the first index, which breaks the neckline."""
+
+    start_neckline = min(range_arr)
+    end_neckline = max(range_arr)
+
+    if operator == "<":
+        neckline_value = np.min(value_arr[:-4])
+        outer_condition = all(val < neckline_value for val in value_arr[-4:])
+    elif operator == ">":
+        neckline_value = np.max(value_arr[:-4])
+        outer_condition = all(val > neckline_value for val in value_arr[-4:])
+
+    if not outer_condition:
+
+        for index, val in enumerate(value_arr[-4:]):
+            if operator == "<":
+                if val < neckline_value:
+                    found_necklines.append([neckline_value, start_neckline, end_neckline])
+                    return index+1
+            elif operator == ">":
+                if val > neckline_value:
+                    found_necklines.append([neckline_value, start_neckline, end_neckline])
+                    return index+1
+
+    return -1
 
 
-def getFirstIndexBreakingNeckline(valueArr, necklineValue, operator):
-	if operator == "<":
-		outerCondition = all(val < necklineValue for val in valueArr)
-	elif operator == ">":
-		outerCondition = all(val > necklineValue for val in valueArr)
-		
-	if not outerCondition:
-		for index, val in enumerate(valueArr):
-			if operator == "<": 	
-				if val < necklineValue:
-					return index+1
-			elif operator == ">":
-				if val > necklineValue:
-					return index+1
-	return -1
+def plot_formations(found_formations, found_formations_index, dataset):
+    """Plots chart_data and detected formations."""
+
+    dataset_index = dataset.index.tolist()
+    fig_plot = plt.figure(figsize=(80, 40), dpi= 120, facecolor='w', edgecolor='k')
+    plt.xticks(range(0, dataset.size))
+    plt.plot(found_formations_index, found_formations, 'o', markersize=9.5, color='green')
+    plt.plot(dataset_index, dataset, '-', markersize=1.5, color='black', alpha=0.6)
+
+    for i, neckline in enumerate(found_necklines):
+        plt.axhline(y=neckline[0], xmin=neckline[1]*(1/dataset.size),
+        xmax=neckline[2]*(1/dataset.size), color='red', alpha=0.1)
+        plt.plot(found_breaking_of_necklines[i][0], found_breaking_of_necklines[i][1], 'o',
+        alpha=1, color='blue')
+
+    plt.xlim([0, dataset.size])
+    fig_plot.savefig("plot_Formations.png")
 
 main()
