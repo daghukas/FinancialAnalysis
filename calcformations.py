@@ -47,7 +47,7 @@ def main():
     formation = args.f
 
     chart_data = read_file(company, time_frame)
-    prepare_data(chart_data, formation)
+    prepare_data(chart_data, formation, company)
 
 def read_file(company, time_frame):
     """Reads file with chart_data."""
@@ -62,18 +62,18 @@ def read_file(company, time_frame):
         parse_dates=[0])
     return chart_data
 
-def prepare_data(chart_data, formation):
+def prepare_data(chart_data, formation, company):
     """Prepares data for further calculations. """
 
     chart_data = chart_data[:300]
-    detect_double_formation(formation, chart_data)
+    detect_double_formation(formation, chart_data, company)
 
-def detect_double_formation(type_of_double_formation, chart_data):
+def detect_double_formation(type_of_double_formation, chart_data, company):
     """Detects double bottom/top in chart_data. """
 
     # 0 = Double Top; 1 = Double Bottom; 2 = Both
     dataset_close_val = chart_data[['Close']]
-
+    print(dataset_close_val)
     arr_index_extreme_values = []
     arr_vals_extreme_values = []
     found_formations = []
@@ -91,13 +91,8 @@ def detect_double_formation(type_of_double_formation, chart_data):
         arr_index_extreme_values = sp.argrelextrema(np.array(dataset_close_val), np.less)[0]
         arr_vals_extreme_values = dataset_close_val.iloc[arr_index_extreme_values]['Close'].values
 
-    #polyfit = np.polyfit(chart_data.index.tolist(), dataset_close_val, 15)
-    #yvalpoly = np.polyval(polyfit, chart_data.index.tolist())
-    #fig3 = plt.figure(figsize=(80, 40), dpi= 120, facecolor='w', edgecolor='k')
-    #plt.plot(chart_data.index.tolist(), yvalpoly, label='fit')
-    #fig3.savefig("test3.png")
-
-    for index_arr, index_dataset in enumerate(arr_index_extreme_values): # KANN WEG
+    print("Index-Ext-Values:", arr_index_extreme_values)
+    for index_arr, index_dataset in enumerate(arr_index_extreme_values):
         if index_arr > 0:
             prev_extreme = arr_vals_extreme_values[index_arr-1]
             curr_extreme = arr_vals_extreme_values[index_arr]
@@ -108,18 +103,20 @@ def detect_double_formation(type_of_double_formation, chart_data):
                 condition_range_between_two_extremes = ((chart_data.index.values >=
                 arr_index_extreme_values[index_arr-1]) &
                 (chart_data.index.values < arr_index_extreme_values[index_arr]+5))
-                # +5 wirft error wenn der zweite Extrempunkte nicht 5 Indizes vor dem Ende liegt
+
                 arr_range_extremes = chart_data.index.values[condition_range_between_two_extremes]
                 arr_values_of_extremes = dataset_close_val[condition_range_between_two_extremes]
-                #print(chart_data.Close.iloc[index_arr+5])
+
+                print("Arr_:", arr_range_extremes, arr_values_of_extremes['Close'].values)
                 first_index_breaking_neckline = get_first_index_breaking_neckline(
                 arr_range_extremes, arr_values_of_extremes['Close'].values, neckline_operator)
-
+                
                 if first_index_breaking_neckline > -1:
                     index_breakthrough = (arr_index_extreme_values[index_arr] +
                     first_index_breaking_neckline)
                     value_breakthrough = dataset_close_val[chart_data.index.values ==
                     index_breakthrough]['Close'].values
+                    print(index_breakthrough, value_breakthrough)
                     found_breaking_of_necklines.append([index_breakthrough, value_breakthrough])
                     found_formations.append(prev_extreme)
                     found_formations_index.append(arr_index_extreme_values[index_arr-1])
@@ -137,7 +134,7 @@ def detect_double_formation(type_of_double_formation, chart_data):
                     print('\n')
 
     # zeichnen --> eigene Methode
-    plot_formations(found_formations, found_formations_index, dataset_close_val)
+    plot_formations(found_formations, found_formations_index, dataset_close_val, company)
 
 def calc_price_target(snd_extrempoint, operator):
     """calculate price target of formation."""
@@ -171,10 +168,9 @@ def get_first_index_breaking_neckline(range_arr, value_arr, operator):
     if not outer_condition:
 
         for index, val in enumerate(value_arr[-4:]):
+            #print(index, val)
             if operator == "<":
                 if val < neckline_value:
-                    #print(range_arr)
-                    #print(value_arr)
                     found_necklines.append([neckline_value, start_neckline, end_neckline])
                     print("DETECTED DOUBLE TOP")
                     print("Short setzen und")
@@ -189,7 +185,7 @@ def get_first_index_breaking_neckline(range_arr, value_arr, operator):
     return -1
 
 
-def plot_formations(found_formations, found_formations_index, dataset):
+def plot_formations(found_formations, found_formations_index, dataset, company):
     """Plots chart_data and detected formations."""
 
     dataset_index = dataset.index.tolist()
@@ -201,12 +197,15 @@ def plot_formations(found_formations, found_formations_index, dataset):
     for i, neckline in enumerate(found_necklines):
         plt.axhline(y=neckline[0], xmin=neckline[1]*(1/dataset.size),
         xmax=neckline[2]*(1/dataset.size), color='red', alpha=0.1)
+        print("I 0", found_breaking_of_necklines[i][0]) # index
+        print("I 1", found_breaking_of_necklines[i][1]) # Value
+
         plt.plot(found_breaking_of_necklines[i][0], found_breaking_of_necklines[i][1], 'o',
         alpha=1, color='blue')
         plt.axhline(y=found_price_targets[i][0], xmin=found_price_targets[i][1]*(1/dataset.size),
         xmax=(found_price_targets[i][2]-1)*(1/dataset.size), color='yellow', alpha=0.1)
 
     plt.xlim([0, dataset.size])
-    fig_plot.savefig("plot_Formations.png")
+    fig_plot.savefig(fr'Plots/plot_formations_{company}.png')
 
 main()
