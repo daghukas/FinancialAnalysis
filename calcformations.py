@@ -52,13 +52,18 @@ def main():
 def read_file(company, time_frame):
     """Reads file with chart_data."""
 
+    if time_frame == "day":
+        column_names = ["Date","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"]
+    elif time_frame == "minute":
+        column_names = ["Date","Time","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"]
+
     filepath = (fr'/data/financedata/2020ss/gelling/data/kibot3/NASDAQ/{company}/{company.lower()}'
         fr'.candle.{time_frame}.unadjusted')
     chart_data = pd.read_csv(
         filepath,
         ",",
         header=None,
-        names=["Date","Time","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"],
+        names=column_names,
         parse_dates=[0])
     return chart_data
 
@@ -102,21 +107,32 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 condition_range_between_two_extremes = ((chart_data.index.values >=
                 arr_index_extreme_values[index_arr-1]) &
-                (chart_data.index.values < arr_index_extreme_values[index_arr]+5))
+                (chart_data.index.values <= arr_index_extreme_values[index_arr]+4))
+
+                condition_range_between_two_extremes2 = ((chart_data.index.values >=
+                arr_index_extreme_values[index_arr-1]) &
+                (chart_data.index.values <= arr_index_extreme_values[index_arr]))
+
+                condition_range_between_two_extremes3 = ((chart_data.index.values >
+                arr_index_extreme_values[index_arr]) &
+                (chart_data.index.values <= arr_index_extreme_values[index_arr]+4))
+
+                #print("Range:", dataset_close_val[condition_range_between_two_extremes3])
 
                 arr_range_extremes = chart_data.index.values[condition_range_between_two_extremes]
                 arr_values_of_extremes = dataset_close_val[condition_range_between_two_extremes]
+                arr_values_between_extremes = dataset_close_val[condition_range_between_two_extremes2]
+                arr_values_after_extremes = dataset_close_val[condition_range_between_two_extremes3]
 
-                print("Arr_:", arr_range_extremes, arr_values_of_extremes['Close'].values)
                 first_index_breaking_neckline = get_first_index_breaking_neckline(
-                arr_range_extremes, arr_values_of_extremes['Close'].values, neckline_operator)
+                arr_range_extremes, arr_values_between_extremes['Close'].values, arr_values_after_extremes['Close'].values, neckline_operator)
                 
                 if first_index_breaking_neckline > -1:
                     index_breakthrough = (arr_index_extreme_values[index_arr] +
                     first_index_breaking_neckline)
                     value_breakthrough = dataset_close_val[chart_data.index.values ==
                     index_breakthrough]['Close'].values
-                    print(index_breakthrough, value_breakthrough)
+                    #print(index_breakthrough, value_breakthrough)
                     found_breaking_of_necklines.append([index_breakthrough, value_breakthrough])
                     found_formations.append(prev_extreme)
                     found_formations_index.append(arr_index_extreme_values[index_arr-1])
@@ -152,23 +168,24 @@ def calc_stop_loss(operator):
 
     return neckline_value * 0.99
 
-def get_first_index_breaking_neckline(range_arr, value_arr, operator):
+def get_first_index_breaking_neckline(range_arr, values_between_extremes_arr, values_after_extremes_arr, operator): #value_arr
     """Gets the first index, which breaks the neckline."""
     global neckline_value
     start_neckline = min(range_arr)
     end_neckline = max(range_arr)
+    print("Betw", values_between_extremes_arr, values_after_extremes_arr)
     # top
     if operator == "<":
-        neckline_value = np.min(value_arr[:-4])
-        outer_condition = all(val < neckline_value for val in value_arr[-4:])
+        neckline_value = np.min(values_between_extremes_arr)
+        outer_condition = all(val < neckline_value for val in values_after_extremes_arr)
     elif operator == ">": # bottom
-        neckline_value = np.max(value_arr[:-4])
-        outer_condition = all(val > neckline_value for val in value_arr[-4:])
+        neckline_value = np.max(values_between_extremes_arr)
+        outer_condition = all(val > neckline_value for val in values_after_extremes_arr)
 
     if not outer_condition:
 
-        for index, val in enumerate(value_arr[-4:]):
-            #print(index, val)
+        for index, val in enumerate(values_after_extremes_arr):
+            #print("betw",neckline_value, val)
             if operator == "<":
                 if val < neckline_value:
                     found_necklines.append([neckline_value, start_neckline, end_neckline])
@@ -197,9 +214,6 @@ def plot_formations(found_formations, found_formations_index, dataset, company):
     for i, neckline in enumerate(found_necklines):
         plt.axhline(y=neckline[0], xmin=neckline[1]*(1/dataset.size),
         xmax=neckline[2]*(1/dataset.size), color='red', alpha=0.1)
-        print("I 0", found_breaking_of_necklines[i][0]) # index
-        print("I 1", found_breaking_of_necklines[i][1]) # Value
-
         plt.plot(found_breaking_of_necklines[i][0], found_breaking_of_necklines[i][1], 'o',
         alpha=1, color='blue')
         plt.axhline(y=found_price_targets[i][0], xmin=found_price_targets[i][1]*(1/dataset.size),
