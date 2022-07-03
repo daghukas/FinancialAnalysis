@@ -11,6 +11,7 @@ The file 'Masterprojekt_Poster_Ghukasyan.pdf' contains further information about
 ## How to install and run the project
 
 To run the project, you need to install python and the following libraries:  
+
     - pandas  
     - numpy  
     - scipy  
