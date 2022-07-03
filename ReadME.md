@@ -1,7 +1,7 @@
 # Identification of formations
 
 This repository contains a Python Script for detecting and trading of Double Top & Double Bottom formations. I focused on analyzing companies listed on the Nasdaq. The chartdata of the companies were given as csv files.
-I used Python because of its strong and efficient data analysis capability.I used the library Pandas for reading the given csv files of the companies. Numpy and Scipy were used for analyzing and detecting the formations in the data. The charts and the detected formations are plotted with functions of the library Matplotlib.
+I used Python because of its strong and efficient data analysis capability.I used the library Pandas for reading the given csv files of the companies. Numpy and Scipy were used for analyzing and detecting the formations in the data. The charts and the detected formations are plotted with functions of the library Matplotlib.  
 
 
 As the project is not finished yet, some functions are commented out for development reasons.
