@@ -17,6 +17,15 @@ successful_trades_first_index = 0
 successful_trades_second_index = 0
 successful_trades_third_index = 0
 successful_trades_fourth_index = 0
+successful_trades_fifth_index = 0
+successful_trades_sixth_index = 0
+successful_trades_seventh_index = 0
+successful_trades_eigth_index = 0
+successful_trades_ninth_index = 0
+successful_trades_tenth_index = 0
+successful_trades_eleventh_index = 0
+successful_trades_twelveth_index = 0
+successful_trades_thirteenth_index = 0
 
 start = time.time()
 
@@ -83,12 +92,22 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     global successful_trades_second_index
     global successful_trades_third_index
     global successful_trades_fourth_index
+    global successful_trades_fifth_index
+    global successful_trades_sixth_index
+    global successful_trades_seventh_index
+    global successful_trades_eigth_index
+    global successful_trades_ninth_index
+    global successful_trades_tenth_index
+    global successful_trades_eleventh_index
+    global successful_trades_twelveth_index
+    global successful_trades_thirteenth_index
+
 
     # 0 = Double Top; 1 = Double Bottom; 2 = Both
     dataset_close_val = chart_data[['Close']]
     arr_index_extreme_values, arr_vals_extreme_values = [], []
     found_formations_index, found_formations = [], []
-
+# 1 1 0 0    1 2 0 0    2 3 0 0   2 3 0 1   2 3 1 1   3 3 1 1   4 3 1 1   4 3 2 1   5 3 2 1   5 4 2 1
     if type_of_double_formation == "0":
         crit_compare_extreme_vals, neckline_operator = '>=', "<"
         arr_index_extreme_values = argrelextrema(np.array(dataset_close_val), np.greater)[0]
@@ -99,7 +118,6 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
         arr_index_extreme_values = argrelextrema(np.array(dataset_close_val), np.less)[0]
         arr_vals_extreme_values = dataset_close_val.iloc[arr_index_extreme_values]['Close'].values
 
-    print("Index-Ext-Values:", type(arr_index_extreme_values))
     for index_arr, index_dataset in enumerate(arr_index_extreme_values):
         if index_arr > 0:
             prev_extreme = arr_vals_extreme_values[index_arr-1]
@@ -110,7 +128,7 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 condition_range_between_two_extremes = ((chart_data.index.values >=
                 arr_index_extreme_values[index_arr-1]) &
-                (chart_data.index.values <= arr_index_extreme_values[index_arr]+4))
+                (chart_data.index.values <= arr_index_extreme_values[index_arr]+9)) #vorher 4
 
                 condition_range_between_two_extremes2 = ((chart_data.index.values >=
                 arr_index_extreme_values[index_arr-1]) &
@@ -118,7 +136,7 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 condition_range_between_two_extremes3 = ((chart_data.index.values >
                 arr_index_extreme_values[index_arr]) &
-                (chart_data.index.values <= arr_index_extreme_values[index_arr]+4))
+                (chart_data.index.values <= arr_index_extreme_values[index_arr]+9)) #vorher 4
 
                 arr_range_extremes = chart_data.index.values[condition_range_between_two_extremes]
                 arr_values_of_extremes = dataset_close_val[condition_range_between_two_extremes]
@@ -144,9 +162,10 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                     #print("Take profits at Price Target of",price_target)
                     found_price_targets.append([price_target, min(arr_range_extremes),
                     max(arr_range_extremes)])
-                    #print(arr_values_after_extremes, price_target)
-                    is_successful_trade(arr_values_after_extremes.values, price_target, neckline_operator)
-                    #successful_trades += is_successful_trade(arr_values_after_extremes.values, price_target, successful_trades, neckline_operator)
+                    #print("Whole Range", arr_range_extremes)
+                    #print("Between Extremes", arr_values_between_extremes)
+                    #print("After Extremes", arr_values_after_extremes, "PT", price_target)
+                    is_successful_trade(arr_values_after_extremes['Close'].values, arr_values_between_extremes['Close'].values, price_target, neckline_operator)
                     #print("Set stop loss at:", stop_loss)
                     #print("Indizes:", arr_values_of_extremes.index.values)
                     #print("Values:", arr_values_of_extremes['Close'].values) war vorher weg
@@ -155,48 +174,117 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     end = time.time()
     print("Duration before print:", end - start)
 
-    f = open("num_of_detected_forms0K5Prozent.txt", "a")
-    f.write(f'\n {company}, {len(found_breaking_of_necklines)}, {successful_trades}, {successful_trades_first_index}, {successful_trades_second_index}, {successful_trades_third_index}, {successful_trades_fourth_index}')
+    f = open("BTnum_of_detected_forms0K5Prozent.txt", "a")
+    f.write(f'\n {company}, {len(found_breaking_of_necklines)}, {successful_trades}, {successful_trades_first_index}, {successful_trades_second_index}, {successful_trades_third_index}, {successful_trades_fourth_index}, {successful_trades_fifth_index}, {successful_trades_sixth_index}, {successful_trades_seventh_index}, {successful_trades_eigth_index}, {successful_trades_ninth_index}, {successful_trades_tenth_index}, {successful_trades_eleventh_index}, {successful_trades_twelveth_index}, {successful_trades_thirteenth_index}')
     #plot_formations(found_formations, found_formations_index, dataset_close_val, company)
     #print(len(found_breaking_of_necklines))
-    #print(successful_trades)
+    print(successful_trades)
     print(successful_trades_first_index, successful_trades_second_index, successful_trades_third_index,
-    successful_trades_fourth_index)
+    successful_trades_fourth_index, successful_trades_fifth_index, successful_trades_sixth_index, 
+    successful_trades_seventh_index, successful_trades_eigth_index, successful_trades_ninth_index,
+    successful_trades_tenth_index, successful_trades_eleventh_index, successful_trades_twelveth_index,
+    successful_trades_thirteenth_index)
 
-def is_successful_trade(arr_values_after_extremes, price_target, operator):
+def is_successful_trade(arr_values_after_extremes, values_between_extremes_arr, price_target, operator):
     """calculate if trade would have been successful."""
     global successful_trades
     global successful_trades_first_index
     global successful_trades_second_index
     global successful_trades_third_index
     global successful_trades_fourth_index
+    global successful_trades_fifth_index
+    global successful_trades_sixth_index
+    global successful_trades_seventh_index
+    global successful_trades_eigth_index
+    global successful_trades_ninth_index
+    global successful_trades_tenth_index
+    global successful_trades_eleventh_index
+    global successful_trades_twelveth_index
+    global successful_trades_thirteenth_index
 
     if operator == "<":
-        if sum(np.squeeze(arr_values_after_extremes <= price_target))>0:
-            successful_trades += 1
-
-        for index, val in enumerate(arr_values_after_extremes):
-            if val <= price_target:
-                if index == 0:
-                    #print(val)
-                    successful_trades_first_index += 1
-                elif index == 1:
-                    #print(val)
-                    successful_trades_second_index += 1
-                elif index == 2:
-                    #print(val)
-                    successful_trades_third_index += 1
-                elif index == 3:
-                    #print(val)
-                    successful_trades_fourth_index += 1
-                else:
-                    None
-    elif operator == ">":
-        if sum(np.squeeze(arr_values_after_extremes >= price_target))>0:
-            successful_trades += 1
+        neckline_value = np.min(values_between_extremes_arr)
+        succesful_trade_condition = arr_values_after_extremes <= price_target
+        compare_value_with_price_target = "<="
     else:
-        None
-        
+        neckline_value = np.max(values_between_extremes_arr)
+        succesful_trade_condition = arr_values_after_extremes >= price_target
+        compare_value_with_price_target = ">=" 
+
+    #print("NT", neckline_value)
+    #arr = (arr_values_after_extremes - neckline_value)
+    #print("Diff to NT", arr)
+    #print("Sign of Diff", np.sign(arr[arr != 0]))
+    #diff = np.diff(np.sign(arr[arr != 0]) )
+    #print("Diff of Signs", diff[diff != 0])
+    if sum(np.squeeze(succesful_trade_condition))>0:
+        successful_trades += 1
+
+    # darf nicht unter und dann wieder uber NL gehen, darf aber uber NL sein
+    for index, val in enumerate(arr_values_after_extremes):
+        if (eval(str(val) + compare_value_with_price_target + str(price_target))):
+            if index == 0:
+                successful_trades_first_index += 1
+                #print("BEI", index, arr_values_after_extremes)
+            elif index == 1:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_second_index += 1
+                    #print("BEI", index, arr_values_after_extremes)
+            elif index == 2:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_third_index += 1
+                    #print("BEI", index, arr_values_after_extremes)
+            elif index == 3:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_fourth_index += 1
+                    #print("BEI", index, arr_values_after_extremes)
+            elif index == 4:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_fifth_index += 1  #successful_trades_sixth_index
+            elif index == 5:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_sixth_index += 1
+            elif index == 6:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_seventh_index += 1
+            elif index == 7:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_eigth_index += 1
+            elif index == 8:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_ninth_index += 1
+            elif index == 9:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_tenth_index += 1
+            elif index == 10:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_eleventh_index += 1
+            elif index == 11:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_twelveth_index += 1
+            elif index == 12:
+                if all_vals_smallerthan_neckline_value(arr_values_after_extremes[:index+1], neckline_value, operator):
+                    successful_trades_thirteenth_index += 1
+            else:
+                None
+    
+def all_vals_smallerthan_neckline_value(arr_values, neckline_value, operator):
+    """Calculate if all values until this point are lower than pricetarget."""
+    # nicht alle Vals, sondern wenn man einmal unter der Nackenlinie ist, darf man nicht mehr druber
+    # VERBESSERN
+
+    #print(arr_values)
+    signs = np.sign(arr_values - neckline_value)
+    #print(signs[signs != 0])
+    diff = np.diff(signs[signs != 0])
+    #print(diff) # vorher muss 0 oder -2 was mit leer bzw keine 2
+    #print("Hat 2 drin", np.any(diff == 2))
+    #print("GGTeil", not np.any(diff == 2))
+   
+    if operator == "<":
+        return not np.any(diff == 2) #np.all((arr_values <= neckline_value) == True)
+    else:
+        return not np.any(diff == -2) #np.all((arr_values >= neckline_value) == True)
 
 def calc_price_target(snd_extrempoint, operator):
     """calculate price target of formation."""
@@ -238,8 +326,8 @@ def get_first_index_breaking_neckline(range_arr, values_between_extremes_arr, va
             elif operator == ">":
                 if val > neckline_value:
                     found_necklines.append([neckline_value, start_neckline, end_neckline])
-                    print("\nDETECTED DOUBLE BOTTOM")
-                    print("Long gehen und")
+                    #print("\nDETECTED DOUBLE BOTTOM")
+                    #print("Long gehen und")
                     return index+1
 
     return -1
@@ -263,7 +351,7 @@ def plot_formations(found_formations, found_formations_index, dataset, company):
         xmax=(found_price_targets[i][2]-1)*(1/dataset.size), color='yellow', alpha=0.1)
 
     plt.xlim([0, dataset.size])
-    fig_plot.savefig(fr'Plots/plot_formations_{company}.png')
+    fig_plot.savefig(fr'Plots/btplot_formations_{company}.png')
     end = time.time()
     print("Duration:", end - start)
 main()
