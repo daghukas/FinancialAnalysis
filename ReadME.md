@@ -10,10 +10,10 @@ The file 'Masterprojekt_Poster_Ghukasyan.pdf' contains further information about
 
 ## How to install and run the project
 
-To run the project, you need to install python and the following libraries:
-    - pandas
-    - numpy
-    - scipy
-    - matplotlib
+To run the project, you need to install python and the following libraries:  
+    - pandas  
+    - numpy  
+    - scipy  
+    - matplotlib  
     
 Additionally you need also access to financial data. As the code is developed for csv source files, you have to customize the code for the source files you use.
