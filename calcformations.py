@@ -1,11 +1,13 @@
 """Detects formations in nasdaq-charts. Current: DoubleTop and DoubleBottom."""
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Action
 from math import isclose
 from pandas import read_csv
 import numpy as np
 from scipy.signal import argrelextrema
 import matplotlib.pyplot as plt
 import time
+#import datetime
+from dateutil.parser import parse, ParserError
 
 found_necklines = []
 found_breaking_of_necklines = []
@@ -28,6 +30,10 @@ successful_trades_twelveth_index = 0
 successful_trades_thirteenth_index = 0
 
 start = time.time()
+
+class DateParser(Action):
+    def __call__(self, parser, namespace, values, option_strings=None):
+        setattr(namespace, self.dest, parse(values).date().strftime("%Y-%m-%d"))
 
 def main():
     """Set-up argparser and process arguments."""
@@ -53,12 +59,27 @@ def main():
         default="0",
         help="Set the formations you want to be detected. 0 = Double Top, 1 = Double Bottom")
 
+    my_parser.add_argument(
+        "-s",
+        metavar="s",
+        action=DateParser,
+        help="Set the start date of chart data"
+    )
+
+    my_parser.add_argument(
+        "-e",
+        metavar="e",
+        action=DateParser,
+        help="Set the end date of chart data"
+    )   
+
     args = my_parser.parse_args()
 
-    company, time_frame, formation = args.c.upper(), args.t.lower(), args.f
-
+    company, time_frame, formation, start_date, end_date = args.c.upper(), args.t.lower(), args.f, args.s, args.e
+    print(start_date)
+    print(end_date)
     chart_data = read_file(company, time_frame)
-    prepare_data(chart_data, formation, company)
+    prepare_data(chart_data, formation, company, start_date, end_date)
 
 def read_file(company, time_frame):
     """Reads file with chart_data."""
@@ -78,10 +99,22 @@ def read_file(company, time_frame):
         parse_dates=[0])
     return chart_data
 
-def prepare_data(chart_data, formation, company):
+def prepare_data(chart_data, formation, company, start_date, end_date):
     """Prepares data for further calculations. """
 
-    chart_data = chart_data[:300]
+    chart_data = chart_data[:50000]
+
+    if start_date:
+        if start_date <= max(chart_data.Date).date().strftime("%Y-%m-%d"):
+            chart_data = chart_data[chart_data.Date >= start_date]
+        else:
+            raise Exception("Start Date higher than dataset dates. Please insert an lower start date.") 
+    if end_date:
+        if end_date >= min(chart_data.Date).date().strftime("%Y-%m-%d"):
+            chart_data = chart_data[chart_data.Date <= end_date]
+        else:
+            raise Exception("End date lower than dataset dates. Please insert an higher end date.")
+
     detect_double_formation(formation, chart_data, company)
 
 def detect_double_formation(type_of_double_formation, chart_data, company):
@@ -177,7 +210,7 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
     #f = open("BTnum_of_detected_forms0K5Prozent.txt", "a")
     #f.write(f'\n {company}, {len(found_breaking_of_necklines)}, {successful_trades}, {successful_trades_first_index}, {successful_trades_second_index}, {successful_trades_third_index}, {successful_trades_fourth_index}, {successful_trades_fifth_index}, {successful_trades_sixth_index}, {successful_trades_seventh_index}, {successful_trades_eigth_index}, {successful_trades_ninth_index}, {successful_trades_tenth_index}, {successful_trades_eleventh_index}, {successful_trades_twelveth_index}, {successful_trades_thirteenth_index}')
-    plot_formations(found_formations, found_formations_index, dataset_close_val, company)
+    # plot_formations(found_formations, found_formations_index, dataset_close_val, company)
     #print(len(found_breaking_of_necklines))
     #print(successful_trades)
     #print(successful_trades_first_index, successful_trades_second_index, successful_trades_third_index,
