@@ -39,7 +39,7 @@ def main():
     """Set-up argparser and process arguments."""
 
     # set input parameter and help message
-    my_parser = ArgumentParser()
+    my_parser = ArgumentParser(description="Detection of Double Top/Bottom formations")
     my_parser.add_argument(
         "-c",
         metavar="C",
@@ -71,17 +71,25 @@ def main():
         metavar="e",
         action=DateParser,
         help="Set the end date of chart data"
-    )   
+    )
+
+    my_parser.add_argument(
+        "-a",
+        metavar="a",
+        choices=["adjusted", "unadjusted", "splitadjusted"],
+        default="unadjusted",
+        help="Chart data adjusted or unadjusted"
+    )
 
     args = my_parser.parse_args()
 
-    company, time_frame, formation, start_date, end_date = args.c.upper(), args.t.lower(), args.f, args.s, args.e
+    company, time_frame, formation, start_date, end_date, adjusted = args.c.upper(), args.t.lower(), args.f, args.s, args.e, args.a
     print(start_date)
     print(end_date)
-    chart_data = read_file(company, time_frame)
+    chart_data = read_file(company, time_frame, adjusted)
     prepare_data(chart_data, formation, company, start_date, end_date)
 
-def read_file(company, time_frame):
+def read_file(company, time_frame, adjusted):
     """Reads file with chart_data."""
 
     if time_frame == "day":
@@ -90,7 +98,7 @@ def read_file(company, time_frame):
         column_names = ["Date","Time","Open", "High","Low","Close","Umsatz (St)", "Quelle", "Import-Datum"]
 
     filepath = (fr'/data/financedata/2020ss/gelling/data/kibot3/NASDAQ/{company}/{company.lower()}'
-        fr'.candle.{time_frame}.unadjusted')
+        fr'.candle.{time_frame}.{adjusted}')
     chart_data = read_csv(
         filepath,
         ",",
