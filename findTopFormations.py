@@ -237,12 +237,28 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                             price_target = calc_price_target(following_extreme_value, neckline_operator)
                             stop_loss = calc_stop_loss(neckline_operator)
+
+                            if type_of_double_formation == "0":
+                                if np.all(arr_values_after_extremes['Close'].values < stop_loss):
+                                    start_money = (start_money +
+                                    (value_breakthrough-arr_values_after_extremes['Close'].values[-1]))
+                                else:
+                                    start_money = start_money + (value_breakthrough - stop_loss)
+
+                            else:
+                                if np.all(arr_values_after_extremes['Close'].values > stop_loss):
+                                    start_money = (start_money +
+                                    (arr_values_after_extremes['Close'].values[-1]-value_breakthrough))
+                                else:
+                                    start_money = start_money + (stop_loss - value_breakthrough)
+
                             counter += 1
                             #print("PT", price_target, "SL", stop_loss)
                             found_price_targets.append([price_target, min(arr_index_complete_range),
                             max(arr_index_complete_range)])
 
-    print("Anzahl", counter)
+    print("Anzahl:", counter)
+    print("Money:", start_money[0])
     plot_formations(found_formations, found_formations_index, dataset_close_val, company, arr_index_of_extreme_values, arr_vals_of_extreme_values)
 
 def check_diff_to_neckline_value(curr_extreme, type_of_double_formation):
