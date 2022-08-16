@@ -183,13 +183,13 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 if type_of_double_formation == "0":
                     neckline_value = np.min(arr_values_between_extremes['Close'].values)
-
+                    multiplicator = 0.99499
                     must_true = (np.all(arr_values_between_extremes[1:-2]['Close'].values < curr_extreme) & 
                     np.all(arr_values_between_extremes[4:-2]['Close'].values < following_extreme_value) &
                     np.all(arr_values_after_extremes['Close'].values < following_extreme_value))
                 else:
                     neckline_value = np.max(arr_values_between_extremes['Close'].values)
-
+                    multiplicator = 1.00501
                     must_true = (np.all(arr_values_between_extremes[1:-2]['Close'].values > curr_extreme) &
                     np.all(arr_values_between_extremes[4:-2]['Close'].values > following_extreme_value) &
                     np.all(arr_values_after_extremes['Close'].values > following_extreme_value))
@@ -199,7 +199,8 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                 #must_true
 
                 # vllt laenge durch 3 anfangs ausschliessen math.ceil(4.2)
-                if ((curr_extreme*0.99499 >= neckline_value) & must_true):
+                #if ((curr_extreme*multiplicator >= neckline_value) & must_true):
+                if check_diff_to_neckline_value(curr_extreme, type_of_double_formation) & must_true:
                     # cond implementieren und weitermachen
                     #if type_of_double_formation == "0":
                     #    condition_values_after_extreme = np.all(arr_values_complete_range['Close'].values <= curr_extreme)
@@ -207,7 +208,7 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                     #    condition_values_after_extreme = np.all(arr_values_complete_range['Close'].values >= curr_extreme)
 
                     #if condition_values_after_extreme & check_previous_trend(chart_data, index_arr, neckline_value, type_of_double_formation, len_of_formation):
-                    if check_previous_trend(chart_data, index_arr, neckline_value, type_of_double_formation, len_of_formation):
+                    if check_previous_trend(chart_data, index_dataset, neckline_value, type_of_double_formation, len_of_formation):
 
                         first_index_breaking_neckline = get_first_index_breaking_neckline(
                         arr_index_complete_range, arr_values_between_extremes['Close'].values,
@@ -244,6 +245,19 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     print("Anzahl", counter)
     plot_formations(found_formations, found_formations_index, dataset_close_val, company, arr_index_of_extreme_values, arr_vals_of_extreme_values)
 
+def check_diff_to_neckline_value(curr_extreme, type_of_double_formation):
+    """Check percentage diff of extreme to neckline"""
+    global neckline_value
+
+    if type_of_double_formation == "0":
+        if curr_extreme*0.99499 >= neckline_value:
+            return True
+    else:
+        if curr_extreme*1.00501 <= neckline_value:
+            return True
+
+    return False
+
 def check_previous_trend(chart_data, index_first_extreme, neckline_value, type_of_double_formation, len_of_formation):
     """Check trend before first extreme, DT=from down, BT=from up"""
 
@@ -264,6 +278,10 @@ def check_previous_trend(chart_data, index_first_extreme, neckline_value, type_o
     else:
         if len(diff[diff==-2]) > 0:
             print("Previous Data:", previous_data)
+            print("Index 1st Extr.:", index_first_extreme)
+            print("Length of f.:", len_of_formation)
+            print("Previous Data:", chart_data[['Close']][((chart_data.index.values < index_first_extreme) & 
+            (chart_data.index.values >= (index_first_extreme - ceil(len_of_formation*1.5))))])
             print("Neckline Val:", neckline_value)
             print("Signs:", signs)
             print("Diff of Signs:", diff[diff==-2])
