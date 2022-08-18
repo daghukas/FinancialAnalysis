@@ -7,10 +7,12 @@ import numpy as np
 from scipy.signal import argrelextrema
 from dateutil.parser import parse
 import matplotlib.pyplot as plt
+from collections import Counter
 
 found_necklines = []
 found_breaking_of_necklines = []
 found_price_targets = []
+successful_trade = []
 neckline_value = 0
 
 successful_trades = 0
@@ -120,6 +122,7 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     """Detects double bottom/top in chart_data. """
 
     global neckline_value
+    global successful_trade
     counter = 0
     min_length = 5
 
@@ -168,11 +171,11 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 condition_complete_range = ((chart_data.index.values >=
                 arr_index_of_extreme_values[index_arr]) &
-                (chart_data.index.values <= (index_of_filtered_extreme_value+len_of_formation)))
+                (chart_data.index.values <= (index_of_filtered_extreme_value+(len_of_formation))))
 
                 condition_range_after_snd_extreme = ((chart_data.index.values >
                 index_of_filtered_extreme_value) &
-                (chart_data.index.values <= (index_of_filtered_extreme_value+len_of_formation)))
+                (chart_data.index.values <= (index_of_filtered_extreme_value+(len_of_formation))))
 
                 # Komplette Range mit nach 2. Extrempunkt
                 arr_index_complete_range = chart_data.index.values[condition_complete_range]
@@ -196,16 +199,10 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                 # CHECKEN, DASS ZWISCHENDRIN NICHT MEHR AUF ERSTES TOP ZRK KOMME; SONDERN ABSTAND MEHR ALS 0;5 PROZENT ZUM TOP IST
                 # statt 4, vllt berechnen wenn > min_length dann 4, sonder min_length/2
-                #must_true
 
                 # vllt laenge durch 3 anfangs ausschliessen math.ceil(4.2)
-                #if ((curr_extreme*multiplicator >= neckline_value) & must_true):
                 if check_diff_to_neckline_value(curr_extreme, type_of_double_formation) & must_true:
                     # cond implementieren und weitermachen
-                    #if type_of_double_formation == "0":
-                    #    condition_values_after_extreme = np.all(arr_values_complete_range['Close'].values <= curr_extreme)
-                    #else:
-                    #    condition_values_after_extreme = np.all(arr_values_complete_range['Close'].values >= curr_extreme)
 
                     #if condition_values_after_extreme & check_previous_trend(chart_data, index_arr, neckline_value, type_of_double_formation, len_of_formation):
                     if check_previous_trend(chart_data, index_dataset, neckline_value, type_of_double_formation, len_of_formation):
@@ -215,20 +212,20 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                         arr_values_after_extremes['Close'].values, neckline_operator)
 
                         if first_index_breaking_neckline > -1:
-                            print("Complete", arr_values_complete_range)
-                            print("1st Extreme", index_dataset)
-                            print("2snd Extreme", index_of_filtered_extreme_value)
-                            print("Snd extreme:", following_extreme_value)
-                            print("After 2snd", arr_values_after_extremes['Close'].values)
-                            print("NecklineVal", neckline_value)
-                            print("Durchbruch!!!")
+                            #print("Complete", arr_values_complete_range)
+                            #print("1st Extreme", index_dataset)
+                            #print("2snd Extreme", index_of_filtered_extreme_value)
+                            #print("Snd extreme:", following_extreme_value)
+                            #print("After 2snd", arr_values_after_extremes['Close'].values)
+                            #print("NecklineVal", neckline_value)
+                            #print("Durchbruch!!!")
                             index_breakthrough = (index_of_filtered_extreme_value +
                             first_index_breaking_neckline + 1)
                             
                             value_breakthrough = dataset_close_val[chart_data.index.values ==
                             index_breakthrough]['Close'].values
-                            print("I-B", index_breakthrough)
-                            print("V-B", value_breakthrough)
+                            #print("I-B", index_breakthrough)
+                            #print("V-B", value_breakthrough)
                             found_breaking_of_necklines.append([index_breakthrough, value_breakthrough])
                             found_formations.append(curr_extreme)
                             found_formations_index.append(index_dataset)
@@ -237,27 +234,33 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
 
                             price_target = calc_price_target(following_extreme_value, neckline_operator)
                             stop_loss = calc_stop_loss(neckline_operator)
-                            is_successful_trade(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values, value_breakthrough, neckline_operator, stop_loss)
+                            #is_successful_trade(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values, value_breakthrough, neckline_operator, stop_loss)
 
                             if type_of_double_formation == "0":
                                 # nach Durchbruch-Index
-                                print("Nach Durchbruch-Index:", arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values)
+                                #print("Nach Durchbruch-Index:", arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values)
                                 if np.all(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values < stop_loss):
-                                    start_money = (start_money +
-                                    (value_breakthrough-arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[-1]))
-                                    print("WIN")
-                                    print("NEW Money:", start_money[0])
+                                    if len(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values) > 0:
+                                        start_money = (start_money +
+                                        (value_breakthrough-arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[-1]))# vorher -1 statt 0
+                                        #print("WIN")
+                                        #print("NEW Money:", start_money[0])
                                 else:
                                     start_money = start_money + (value_breakthrough - stop_loss)
-                                    print("LOSE")
-                                    print("NEW Money:", start_money[0])
+                                    #print("LOSE")
+                                    #print("NEW Money:", start_money[0])
 
                             else:
-                                if np.all(arr_values_after_extremes['Close'].values > stop_loss):
-                                    start_money = (start_money +
-                                    (arr_values_after_extremes['Close'].values[-1]-value_breakthrough))
+                                if np.all(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values > stop_loss):
+                                    if len(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values) > 0:
+                                        start_money = (start_money +
+                                        (arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[-1]-value_breakthrough))
+                                        #print("WIN")
+                                        #print("NEW Money:", start_money[0])
                                 else:
                                     start_money = start_money + (stop_loss - value_breakthrough)
+                                    #print("LOSE")
+                                    #print("NEW Money:", start_money[0])
 
                             counter += 1
                             #print("PT", price_target, "SL", stop_loss)
@@ -265,18 +268,26 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                             max(arr_index_complete_range)])
 
     print("Anzahl:", counter)
-    print("Money:", start_money[0])
-    #plot_formations(found_formations, found_formations_index, dataset_close_val, company, arr_index_of_extreme_values, arr_vals_of_extreme_values)
+    #print("Money:", start_money[0])
+    #f = open("20220817_BT_0K5_len_money_both_changes.txt", "a")
+    #f.write(f'\n {company}, {counter}, {start_money[0]}')
+    #print("Successful Trade:", sorted(successful_trade, key=lambda x:x[0]))
+    #print(Counter(successful_trade))
+    plot_formations(found_formations, found_formations_index, dataset_close_val, company, arr_index_of_extreme_values, arr_vals_of_extreme_values)
 
 def is_successful_trade(arr_values_after_breakthrough, value_breakthrough, operator, stop_loss):
     """Calculates if trade is successful."""
     global neckline_value
+    global successful_trade
+
     compare_value_with_price_target = "<="
 
     for index, val in enumerate(arr_values_after_breakthrough):
         if (eval(str(val) + compare_value_with_price_target + str(value_breakthrough[0]))):
             if (np.all(arr_values_after_breakthrough[index:] < stop_loss)):
-                print("Index:", index, "Profit:", (value_breakthrough[0] - val))
+                profit = (value_breakthrough[0] - val)
+                print("Index:", index, "Profit:", profit)
+                successful_trade.append([index, profit])
                 # vllt in array eintragen und dann je element durchschnitt und Anzahl berechnen
                 # das mit besten Durchschnitt nehmen
 
@@ -312,14 +323,14 @@ def check_previous_trend(chart_data, index_first_extreme, neckline_value, type_o
             return True
     else:
         if len(diff[diff==-2]) > 0:
-            print("Previous Data:", previous_data)
-            print("Index 1st Extr.:", index_first_extreme)
-            print("Length of f.:", len_of_formation)
-            print("Previous Data:", chart_data[['Close']][((chart_data.index.values < index_first_extreme) & 
-            (chart_data.index.values >= (index_first_extreme - ceil(len_of_formation*1.5))))])
-            print("Neckline Val:", neckline_value)
-            print("Signs:", signs)
-            print("Diff of Signs:", diff[diff==-2])
+            #print("Previous Data:", previous_data)
+            #print("Index 1st Extr.:", index_first_extreme)
+            #print("Length of f.:", len_of_formation)
+            #print("Previous Data:", chart_data[['Close']][((chart_data.index.values < index_first_extreme) & 
+            #(chart_data.index.values >= (index_first_extreme - ceil(len_of_formation*1.5))))])
+            #print("Neckline Val:", neckline_value)
+            #print("Signs:", signs)
+            #print("Diff of Signs:", diff[diff==-2])
             return True
 
     return False
@@ -341,14 +352,14 @@ def get_first_index_breaking_neckline(arr_index_complete_range, values_between_e
             if val < neckline_value:
                 found_necklines.append([neckline_value, start_neckline, end_neckline])
                 print("\nDETECTED DOUBLE TOP")
-                print("Short gehen und")
-                print("BEI INDEX", index)
+                #print("Short gehen und")
+                #print("BEI INDEX", index)
                 return index
         else:
             if val > neckline_value:
                 found_necklines.append([neckline_value, start_neckline, end_neckline])
-                print("\nDETECTED DOUBLE BOTTOM")
-                print("Long gehen und")
+                #print("\nDETECTED DOUBLE BOTTOM")
+                #print("Long gehen und")
                 return index
 
     return -1
@@ -388,6 +399,6 @@ def plot_formations(found_formations, found_formations_index, dataset, company, 
         xmax=(found_price_targets[i][2]-1)*(1/dataset.size), color='yellow', alpha=0.1)
 
     plt.xlim([0, dataset.size])
-    fig_plot.savefig(fr'plot_formations_run_{company}.png')
+    fig_plot.savefig(fr'20220817_BT_0K5_Len_Precision/plot_formations_{company}.png')
 
 main()
