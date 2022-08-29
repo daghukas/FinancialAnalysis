@@ -22,6 +22,16 @@ successful_trade_5 = []
 successful_trade_6 = []
 successful_trade_7 = []
 successful_trade_8 = []
+successful_trade_9 = []
+successful_trade_10 = []
+successful_trade_11 = []
+successful_trade_12 = []
+successful_trade_13 = []
+successful_trade_14 = []
+successful_trade_15 = []
+successful_trade_16 = []
+successful_trade_17 = []
+
 
 neckline_value = 0
 
@@ -111,7 +121,7 @@ def read_file(company, time_frame, adjusted):
 def prepare_data(chart_data, formation, company, start_date, end_date):
     """Prepares data for further calculations. """
 
-    chart_data = chart_data[:5000]
+    chart_data = chart_data[:1000]
 
     if start_date:
         if start_date <= max(chart_data.Date).date().strftime("%Y-%m-%d"):
@@ -142,6 +152,15 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     global successful_trade_6
     global successful_trade_7
     global successful_trade_8
+    global successful_trade_9
+    global successful_trade_10
+    global successful_trade_11
+    global successful_trade_12
+    global successful_trade_13
+    global successful_trade_14
+    global successful_trade_15
+    global successful_trade_16
+    global successful_trade_17
 
     counter = 0
     min_length = 5
@@ -149,6 +168,8 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
     start_money = 1000
     # 0 = Double Top; 1 = Double Bottom; 2 = Both
     dataset_close_val = chart_data[['Close']]
+    first_close_val = chart_data[['Close']]['Close'].values[0]
+    last_close_val = chart_data[['Close']]['Close'].values[-1]
     arr_index_extreme_values, arr_vals_extreme_values = [], []
     found_formations_index, found_formations = [], []
 
@@ -229,9 +250,9 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                         arr_values_after_extremes['Close'].values, neckline_operator)
 
                         if first_index_breaking_neckline > -1:
-                            #print("Complete", arr_values_complete_range)
-                            #print("1st Extreme", index_dataset)
-                            #print("2snd Extreme", index_of_filtered_extreme_value)
+                            print("Complete Formation", arr_values_complete_range)
+                            print("1st Extreme", index_dataset)
+                            print("2snd Extreme", index_of_filtered_extreme_value)
                             #print("Snd extreme:", following_extreme_value)
                             #print("After 2snd", arr_values_after_extremes['Close'].values)
                             #print("NecklineVal", neckline_value)
@@ -258,8 +279,14 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                                 #print("Nach Durchbruch-Index:", arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values)
                                 if np.all(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values < stop_loss):
                                     if len(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values) > 0:
+                                        if len(arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values) >= 14:
+                                            index = 13
+                                        else:
+                                            index = -1
+                                        #print("Index", index)
+                                        #print("Val", arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[index])
                                         start_money = (start_money +
-                                        (value_breakthrough-arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[-1]))# vorher -1 statt 0
+                                        (value_breakthrough-arr_values_after_extremes[(index_breakthrough - index_of_filtered_extreme_value):]['Close'].values[index]))# vorher -1 statt 0
                                         #print("WIN")
                                         #print("NEW Money:", start_money[0])
                                 else:
@@ -280,42 +307,58 @@ def detect_double_formation(type_of_double_formation, chart_data, company):
                                     #print("NEW Money:", start_money[0])
 
                             counter += 1
-                            #print("SL", stop_loss)
+                            print("SL", stop_loss)
                             found_price_targets.append([price_target, min(arr_index_complete_range),
                             max(arr_index_complete_range)])
 
     print("Anzahl:", counter)
-    #print("Money:", start_money[0])
-    f = open("20220817_money.txt", "a")
+    print("Money:", start_money[0])
+    #f = open("20220818_StopLoss/DT3000DS_1Prozent.txt", "a")
+    #if counter == 0:
+    #    f.write(f'\n {company}, {counter}, {first_close_val}, {last_close_val}, {start_money}')
+    #else:
+    #    f.write(f'\n {company}, {counter}, {first_close_val}, {last_close_val}, {start_money[0]}')
 
-    f.write(f'\n {company}, ')
-    if len(successful_trade_0):
-        line = f'{len(successful_trade_0)}, {sum(successful_trade_0) / len(successful_trade_0)}'.replace("\n"," ")
-        f.write(line)
-    if len(successful_trade_1):
-        f.write(f' {len(successful_trade_1)}, {sum(successful_trade_1) / len(successful_trade_1)}')
-    if len(successful_trade_2):
-        f.write(f' {len(successful_trade_2)}, {sum(successful_trade_2) / len(successful_trade_2)}')
-    if len(successful_trade_3):
-        f.write(f' {len(successful_trade_3)}, {sum(successful_trade_3) / len(successful_trade_3)}')
-    if len(successful_trade_4):
-        f.write(f' {len(successful_trade_4)}, {sum(successful_trade_4) / len(successful_trade_4)}')
-    if len(successful_trade_5):
-        f.write(f' {len(successful_trade_5)}, {sum(successful_trade_5) / len(successful_trade_5)}')
-    if len(successful_trade_6):
-        f.write(f' {len(successful_trade_6)}, {sum(successful_trade_6) / len(successful_trade_6)}')
-    if len(successful_trade_7):
-        f.write(f' {len(successful_trade_7)}, {sum(successful_trade_7) / len(successful_trade_7)}')
-    if len(successful_trade_8):
-        f.write(f' {len(successful_trade_8)}, {sum(successful_trade_8) / len(successful_trade_8)}')
-
-
+    #f.write(f'\n {company}, {counter},')
+    #if len(successful_trade_0):
+    #    line = f'{len(successful_trade_0)}, {sum(successful_trade_0) / len(successful_trade_0)}, '.replace("\n"," ")
+    #    f.write(line)
+    #if len(successful_trade_1):
+    #    f.write(f'{len(successful_trade_1)}, {sum(successful_trade_1) / len(successful_trade_1)}')
+    #if len(successful_trade_2):
+    #    f.write(f',{len(successful_trade_2)}, {sum(successful_trade_2) / len(successful_trade_2)}')
+    #if len(successful_trade_3):
+    #    f.write(f',{len(successful_trade_3)}, {sum(successful_trade_3) / len(successful_trade_3)}')
+    #if len(successful_trade_4):
+    #    f.write(f',{len(successful_trade_4)}, {sum(successful_trade_4) / len(successful_trade_4)}')
+    #if len(successful_trade_5):
+    #    f.write(f',{len(successful_trade_5)}, {sum(successful_trade_5) / len(successful_trade_5)}')
+    #if len(successful_trade_6):
+    #    f.write(f',{len(successful_trade_6)}, {sum(successful_trade_6) / len(successful_trade_6)}')
+    #if len(successful_trade_7):
+    #    f.write(f',{len(successful_trade_7)}, {sum(successful_trade_7) / len(successful_trade_7)}')
+    #if len(successful_trade_8):
+    #    f.write(f',{len(successful_trade_8)}, {sum(successful_trade_8) / len(successful_trade_8)}')
+    #if len(successful_trade_9):
+    #    f.write(f',{len(successful_trade_9)}, {sum(successful_trade_9) / len(successful_trade_9)}')
+    #if len(successful_trade_10):
+    #    f.write(f',{len(successful_trade_10)}, {sum(successful_trade_10) / len(successful_trade_10)}')
+    #if len(successful_trade_11):
+    #    f.write(f',{len(successful_trade_11)}, {sum(successful_trade_11) / len(successful_trade_11)}')
+    #if len(successful_trade_12):
+    #    f.write(f',{len(successful_trade_12)}, {sum(successful_trade_12) / len(successful_trade_12)}')
+    #if len(successful_trade_13):
+    #    f.write(f',{len(successful_trade_13)}, {sum(successful_trade_13) / len(successful_trade_13)}')
+    #if len(successful_trade_14):
+    #    f.write(f',{len(successful_trade_14)}, {sum(successful_trade_14) / len(successful_trade_14)}')
+    #if len(successful_trade_15):
+    #    f.write(f',{len(successful_trade_15)}, {sum(successful_trade_15) / len(successful_trade_15)}')
+    #if len(successful_trade_16):
+    #    f.write(f',{len(successful_trade_16)}, {sum(successful_trade_16) / len(successful_trade_16)}')
+    #if len(successful_trade_17):
+    #    f.write(f',{len(successful_trade_17)}, {sum(successful_trade_17) / len(successful_trade_17)}')
 
     # gucken, wie man das in Excel eintraegt zum Auswerten
-    
-    
-    #f.write(f'''\n {company}, {counter}, {len(successful_trade_0)}, {sum(successful_trade_0) / len(successful_trade_0)}, {len(successful_trade_1)}, {sum(successful_trade_1) / len(successful_trade_1)}, {len(successful_trade_2)}, {sum(successful_trade_2) / len(successful_trade_2)}, {len(successful_trade_3)}, {sum(successful_trade_3) / len(successful_trade_3)}, {len(successful_trade_4)}, {sum(successful_trade_4) / len(successful_trade_4)}, {len(successful_trade_5)}, {sum(successful_trade_5) / len(successful_trade_5)}, {len(successful_trade_6)}, {sum(successful_trade_6) / len(successful_trade_6)}, {len(successful_trade_7)}, {sum(successful_trade_7) / len(successful_trade_7)}, {len(successful_trade_8)}, {sum(successful_trade_8) / len(successful_trade_8)}''')
-
     #print(len(successful_trade_0), sum(successful_trade_0) / len(successful_trade_0))
     #print(len(successful_trade_1), sum(successful_trade_1) / len(successful_trade_1))
     #print(len(successful_trade_2), sum(successful_trade_2) / len(successful_trade_2))
@@ -340,6 +383,15 @@ def is_successful_trade(arr_values_after_breakthrough, value_breakthrough, opera
     global successful_trade_6
     global successful_trade_7
     global successful_trade_8
+    global successful_trade_9
+    global successful_trade_10
+    global successful_trade_11
+    global successful_trade_12
+    global successful_trade_13
+    global successful_trade_14
+    global successful_trade_15
+    global successful_trade_16
+    global successful_trade_17
 
     compare_value_with_price_target = "<="
 
@@ -383,6 +435,43 @@ def is_successful_trade(arr_values_after_breakthrough, value_breakthrough, opera
                 profit = (value_breakthrough[0] - val)
                 #print("Index:", index, "Profit:", profit)
                 successful_trade_8.append(profit)
+            elif index == 9:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_9.append(profit)
+            elif index == 10:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_10.append(profit)
+            elif index == 11:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_11.append(profit)
+            elif index == 12:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_12.append(profit)
+            elif index == 13:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit, "Val", val)
+                successful_trade_13.append(profit)
+            elif index == 14:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_14.append(profit)
+            elif index == 15:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_15.append(profit)
+            elif index == 16:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_16.append(profit)
+            elif index == 17:
+                profit = (value_breakthrough[0] - val)
+                #print("Index:", index, "Profit:", profit)
+                successful_trade_17.append(profit)
+
         else:
             if index == 0:
                 successful_trade_0.append(value_breakthrough[0] - stop_loss)
@@ -402,6 +491,24 @@ def is_successful_trade(arr_values_after_breakthrough, value_breakthrough, opera
                 successful_trade_7.append(value_breakthrough[0] - stop_loss)
             elif index == 8:
                 successful_trade_8.append(value_breakthrough[0] - stop_loss)
+            elif index == 9:
+                successful_trade_9.append(value_breakthrough[0] - stop_loss)
+            elif index == 10:
+                successful_trade_10.append(value_breakthrough[0] - stop_loss)
+            elif index == 11:
+                successful_trade_11.append(value_breakthrough[0] - stop_loss)
+            elif index == 12:
+                successful_trade_12.append(value_breakthrough[0] - stop_loss)
+            elif index == 13:
+                successful_trade_13.append(value_breakthrough[0] - stop_loss)
+            elif index == 14:
+                successful_trade_14.append(value_breakthrough[0] - stop_loss)
+            elif index == 15:
+                successful_trade_15.append(value_breakthrough[0] - stop_loss)
+            elif index == 16:
+                successful_trade_16.append(value_breakthrough[0] - stop_loss)
+            elif index == 17:
+                successful_trade_17.append(value_breakthrough[0] - stop_loss)
 
 
 def check_diff_to_neckline_value(curr_extreme, type_of_double_formation):
@@ -409,10 +516,10 @@ def check_diff_to_neckline_value(curr_extreme, type_of_double_formation):
     global neckline_value
 
     if type_of_double_formation == "0":
-        if curr_extreme*0.99499 >= neckline_value:
+        if curr_extreme*0.98999 >= neckline_value: # 0.99499
             return True
     else:
-        if curr_extreme*1.00501 <= neckline_value:
+        if curr_extreme*1.01001 <= neckline_value: # 1.00501
             return True
 
     return False
@@ -464,15 +571,15 @@ def get_first_index_breaking_neckline(arr_index_complete_range, values_between_e
         if operator == "<":
             if val < neckline_value:
                 found_necklines.append([neckline_value, start_neckline, end_neckline])
-                #print("\nDETECTED DOUBLE TOP")
-                #print("Short gehen und")
-                #print("BEI INDEX", index)
+                print("\nDETECTED DOUBLE TOP")
+                print("Short gehen")
+                print("BEI INDEX", index, "Nackenlinie durchbrochen")
                 return index
         else:
             if val > neckline_value:
                 found_necklines.append([neckline_value, start_neckline, end_neckline])
-                #print("\nDETECTED DOUBLE BOTTOM")
-                #print("Long gehen und")
+                print("\nDETECTED DOUBLE BOTTOM")
+                print("Long gehen, bei Index", index, "Nackenlinie durchbrochen")
                 return index
 
     return -1
@@ -489,9 +596,9 @@ def calc_stop_loss(operator):
     """Calculate where to set the stop loss."""
 
     if operator == "<":
-        return neckline_value * 1.01
+        return neckline_value * 1.02
 
-    return neckline_value * 0.99
+    return neckline_value * 0.98
 
 def plot_formations(found_formations, found_formations_index, dataset, company, arr_index_of_extreme_values, arr_vals_of_extreme_values):
     """Plots chart_data and detected formations."""
@@ -512,6 +619,6 @@ def plot_formations(found_formations, found_formations_index, dataset, company, 
         xmax=(found_price_targets[i][2]-1)*(1/dataset.size), color='yellow', alpha=0.1)
 
     plt.xlim([0, dataset.size])
-    fig_plot.savefig(fr'20220817_BT_1_Len_Precision/plot_formations_{company}.png')
+    fig_plot.savefig(fr'20220818_Neckline_Downfall_Uprise/2/DT/plot_formations_{company}.png')
 
 main()
